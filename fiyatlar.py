@@ -10,7 +10,7 @@ headers = {
 
 def cimri(webpage):
     with requests.get(webpage["url"],
-                      params=webpage.get("params"),
+                      params=webpage["params"],
                       headers=headers) as url:
         data = url.content
     soup = BeautifulSoup(data, "html.parser")
@@ -26,7 +26,8 @@ def cimri(webpage):
                 element.contents[0].find_all(class_="top-offers")[0].
                 contents[0].next_element.nextSibling.split(" TL")[0].replace(
                     ".", "").replace(",", "."))
-            product_prices[product_title] = (product_price)
+            product_prices[webpage["params"]["q"] + "@ " +
+                           product_title] = (product_price)
         except (IndexError, AttributeError) as error:
             print(error)  # handle error
     product_prices = dict(
@@ -36,7 +37,7 @@ def cimri(webpage):
 
 def akakce(webpage):
     with requests.get(webpage["url"],
-                      params=webpage.get("params"),
+                      params=webpage["params"],
                       headers=headers) as url:
         data = url.content
     soup = BeautifulSoup(data, "html.parser")
@@ -50,7 +51,8 @@ def akakce(webpage):
                 element.find_all(
                     class_="pt_v9")[0].text.split("TL")[0].strip().replace(
                         ".", "").replace(",", "."))
-            product_prices[product_title] = product_price
+            product_prices[webpage["params"]["q"] + "@ " +
+                           product_title] = product_price
         except (IndexError, AttributeError) as error:
             print(error)  # handle error
     product_prices = dict(
@@ -59,8 +61,10 @@ def akakce(webpage):
 
 
 def epey(webpage):
+    webpage["params"]["ara"] = webpage["params"]["q"]
+    webpage["params"].pop("q")
     with requests.get(webpage["url"],
-                      params=webpage.get("params"),
+                      params=webpage["params"],
                       headers=headers) as url:
         data = url.content
     soup = BeautifulSoup(data, "html.parser")
@@ -68,14 +72,16 @@ def epey(webpage):
     product_prices = {}
     for element in product_elements:
         try:
+            if element.find(class_="fiyat cell").find("a") is None:
+                continue
             product_title = element.find(class_="urunadi").text
-            if element.find(class_="fiyat cell").find("a") is not None:
-                product_price = float(
-                    element.find(class_="fiyat cell").find(
-                        "a").next_element.split("TL")[0].strip().replace(
-                            ".", "").replace(",", "."))
-            product_prices[product_title] = product_price
+            product_price = float(
+                element.find(class_="fiyat cell").find("a").next_element.split(
+                    "TL")[0].strip().replace(".", "").replace(",", "."))
+            product_prices[webpage["params"]["ara"] + "@ " +
+                           product_title] = product_price
             sorted(product_prices.items(), )
+            # product_price = ""
         except (IndexError, AttributeError) as error:
             print(error)  # handle error
     product_prices = dict(
@@ -83,45 +89,48 @@ def epey(webpage):
     return product_prices
 
 
-query = "Radeon RX 6750 XT"
+queries = [
+    "Radeon RX 7900 XTX", "Radeon RX 7900 XT", "Radeon RX 6950 XT",
+    "Radeon RX 6900 XT", "Radeon RX 6800 XT", "Radeon RX 6800",
+    "Radeon RX 6750 XT", "Radeon RX 6700 XT", "Radeon RX 6700",
+    "Radeon RX 6650 XT", "Radeon RX 6600 XT", "Radeon RX 6600",
+    "Radeon RX 6500 XT"
+]
 
 WEBSITES = {
     "cimri": {
         "url": "https://www.cimri.com/arama",
         "params": {
-            "sort": "price,asc",
-            "q": query
+            "q": ""
         },
     },
     "akakce": {
         "url": "https://www.akakce.com/arama/",
         "params": {
-            "q": query,
-            "s": "2"
+            "q": ""
         },
     },
     "epey": {
-        "url":
-        "https://www.epey.com/ekran-karti/grafik-islemcisi/" +
-        query.replace(" ", "-"),
-        "params":
-        ""
+        "url": "https://www.epey.com/ara/",
+        "params": {
+            "ara": ""
+        }
     },
 }
-
-# cimri_webpage = "https://www.cimri.com/arama?sort=price%2Casc&q=radeon+6750+xt"
-# akakce_webpage = "https://www.akakce.com/arama/?q=6750+XT&s=2"
-# epey_webpage = "https://www.epey.com/ekran-karti/grafik-islemcisi/radeon-rx-6750-xt"
 
 
 def main():
     prices = {}
     for website in WEBSITES:
         func = globals()[website]
-        prices[website + "_prices"] = func(WEBSITES[website])
+        for query in queries:
+            WEBSITES[website]['params']['q'] = query
+            if website + "_prices" not in prices:
+                prices[website + "_prices"] = {}
+            prices[website + "_prices"].update(func(WEBSITES[website]))
     for website in prices:
         for item, price in prices[website].items():
-            print(f"{item}: {price} @{website}")
+            print(f"{item}: {price} @ {website}")
 
 
 if __name__ == '__main__':
