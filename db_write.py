@@ -6,7 +6,7 @@ import time
 conn = sqlite3.connect('prices.db')
 c = conn.cursor()
 
-
+ 
 # c.execute('INSERT INTO prices (website text, query text, item text, price real, time integer)')
 prices = fiyatlar.main()
 curr_time = time.time()

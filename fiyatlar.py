@@ -21,7 +21,6 @@ def cimri(webpage):
     product_elements = product_elements.find_all(id="cimri-product")
     for element in product_elements:
         try:
-            # product = element.contents[0].find(class_="cACjAF")
             product_title = element.contents[0].find_all(
                 class_="link-detail")[0].attrs["title"]
             if element.contents[0].find_all(class_="top-offers")[0].contents[
@@ -35,9 +34,7 @@ def cimri(webpage):
                            product_title] = (product_price)
         except (IndexError, AttributeError) as error:
             print(error, webpage["url"].split(".")[1])  # handle error
-    product_prices = dict(
-        sorted(product_prices.items(), key=lambda x: x[1])[:2])
-    return product_prices
+    return dict(sorted(product_prices.items(), key=lambda x: x[1])[:2])
 
 
 def akakce(webpage):
@@ -49,7 +46,6 @@ def akakce(webpage):
     if url.status_code == 429:
         return product_prices
     soup = BeautifulSoup(data, "html.parser")
-    # product_elements = soup.find_all("li")
     product_elements = soup.find(id="APL").find_all("li")
     product_prices = {}
     for element in product_elements:
@@ -63,9 +59,7 @@ def akakce(webpage):
                            product_title] = product_price
         except (IndexError, AttributeError) as error:
             print(error, webpage["url"].split(".")[1])  # handle error
-    product_prices = dict(
-        sorted(product_prices.items(), key=lambda x: x[1])[:2])
-    return product_prices
+    return dict(sorted(product_prices.items(), key=lambda x: x[1])[:2])
 
 
 def epey(webpage):
@@ -94,12 +88,10 @@ def epey(webpage):
             product_prices[webpage["params"]["ara"] + " @ " +
                            product_title] = product_price
             sorted(product_prices.items(), )
-            # product_price = ""
         except (IndexError, AttributeError) as error:
             print(error, webpage["url"].split(".")[1])  # handle error
-    product_prices = dict(
-        sorted(product_prices.items(), key=lambda x: x[1])[:2])
-    return product_prices
+
+    return dict(sorted(product_prices.items(), key=lambda x: x[1])[:2])
 
 
 queries = [
@@ -114,16 +106,16 @@ queries = [
 
 WEBSITES = {
     "cimri": {
-        "url": "https://www.cimri.com/arama",
+        "url": "https://www.cimri.com/ekran-kartlari",
         "params": {
-            "q": "",
-            "ekran-kartlari": ""
+            "q": ""
         },
     },
     "akakce": {
         "url": "https://www.akakce.com/arama/",
         "params": {
-            "q": ""
+            "q": "",
+            "c": "1053"
         },
     },
     "epey": {
@@ -137,15 +129,15 @@ WEBSITES = {
 
 def main():
     prices = {}
-    for website in WEBSITES:
-        func = globals()[website]
-        for query in queries:
+    for query in queries:
+        for website in WEBSITES:
+            func = globals()[website]
             WEBSITES[website]['params']['q'] = query
             if website not in prices:
                 prices[website] = {}
             price = func(WEBSITES[website])
             if price == {}:
-                prices[website].update({query + " @ ": ""})
+                prices[website].update({f"{query} @ " : ""})
             else:
                 prices[website].update(price)
     for website in prices:
