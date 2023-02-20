@@ -1,15 +1,15 @@
 -- SQLite
 
 --hepsi
-select rowid, prices.*
-from prices;
+select rowid, prices.* from prices;
 
---time bazli
+--kontrol
 Select datetime(time, 'unixepoch', 'localtime') time, count(*) from prices GROUp by time;
 Select time, count(*) from prices GROUp by time;
+select website, query, count(*) from prices group by website, query;
 
---ihtiyac
-select * from prices where trim(time) = trim(1676797795.03294);
+select * from prices where query = 'Radeon RX 6800 XT' order by 1;
+
 
 --onceki vs son
 WITH
@@ -37,7 +37,7 @@ where son.price < bir_once.price;
 --TEST
 --drop create
 drop table prices;
-CREATE TABLE prices (website text, query text, item text, price real, time integer);
+CREATE TABLE prices (website text, query text, item text, price real, time integer, link text);
 
 --update
 update prices 
@@ -46,9 +46,13 @@ where query = 'Radeon RX 6800'
 and trim(time) = trim(1676792796.22653)
 and website = 'akakce';
 
+delete from prices 
+where trim(time) = trim(1676928830.16722);
+
+
 commit;
 
-select * from prices where query = 'Radeon RX 6800' 
+select * from prices where query = 'Radeon RX 7900 XTX' 
 and trim(time) = trim(1676797795.03294)
 and website = 'akakce'
 ;

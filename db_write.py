@@ -12,7 +12,10 @@ prices = fiyatlar.main()
 curr_time = time.time()
 for website in prices:
     for item, price in prices[website].items():
-        c.execute('INSERT INTO prices VALUES (?, ?, ?, ?, ?)', (website, item.split("@")[0].strip() , item, price, curr_time))
+        if price == "":
+            price = ["",""]
+        c.execute('INSERT INTO prices VALUES (?, ?, ?, ?, ?, ?)',
+        (website, item.split("@")[0].strip() , item, price[0], curr_time, price[1]))
 
 # Commit the changes and close the connection
 conn.commit()

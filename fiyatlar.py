@@ -26,15 +26,16 @@ def cimri(webpage):
             if element.contents[0].find_all(class_="top-offers")[0].contents[
                     0].next_element.nextSibling is None:  #if price is null
                 continue
+            link = "cimri.com" + element.contents[0].find_all("a")[0]["href"]
             product_price = float(
                 element.contents[0].find_all(class_="top-offers")[0].
                 contents[0].next_element.nextSibling.split(" TL")[0].replace(
                     ".", "").replace(",", "."))
             product_prices[webpage["params"]["q"] + " @ " +
-                           product_title] = (product_price)
+                           product_title] = [product_price, link]
         except (IndexError, AttributeError) as error:
             print(error, webpage["url"].split(".")[1])  # handle error
-    return dict(sorted(product_prices.items(), key=lambda x: x[1])[:2])
+    return dict(sorted(product_prices.items(), key=lambda x: x[1])[:1])
 
 
 def akakce(webpage):
@@ -51,15 +52,18 @@ def akakce(webpage):
     for element in product_elements:
         try:
             product_title = element.find_all(class_="pn_v8")[0].text
+            if element.find_all("a") == []:
+                continue
+            link = "akakce.com" + element.find_all("a")[0]["href"]
             product_price = float(
                 element.find_all(
                     class_="pt_v9")[0].text.split("TL")[0].strip().replace(
                         ".", "").replace(",", "."))
             product_prices[webpage["params"]["q"] + " @ " +
-                           product_title] = product_price
+                           product_title] = [product_price, link]
         except (IndexError, AttributeError) as error:
             print(error, webpage["url"].split(".")[1])  # handle error
-    return dict(sorted(product_prices.items(), key=lambda x: x[1])[:2])
+    return dict(sorted(product_prices.items(), key=lambda x: x[1])[:1])
 
 
 def epey(webpage):
@@ -82,16 +86,17 @@ def epey(webpage):
                         class_="fiyat cell") is None:  #if product is NA
                 continue
             product_title = element.find(class_="urunadi").text
+            link = element.find(class_="detay cell").a["href"]
             product_price = float(
                 element.find(class_="fiyat cell").find("a").next_element.split(
                     "TL")[0].strip().replace(".", "").replace(",", "."))
             product_prices[webpage["params"]["ara"] + " @ " +
-                           product_title] = product_price
+                           product_title] = [product_price, link]
             sorted(product_prices.items(), )
         except (IndexError, AttributeError) as error:
             print(error, webpage["url"].split(".")[1])  # handle error
 
-    return dict(sorted(product_prices.items(), key=lambda x: x[1])[:2])
+    return dict(sorted(product_prices.items(), key=lambda x: x[1])[:1])
 
 
 queries = [
@@ -142,7 +147,10 @@ def main():
                 prices[website].update(price)
     for website in prices:
         for item, price in prices[website].items():
-            print(f"{item}: {price} @ {website}")
+            if price == "":
+                print(f"{item}: {price} @ {website}")
+                continue
+            print(f"{item}: {price[0]} @ {website} @ {price[1]}")
     return prices
     
 

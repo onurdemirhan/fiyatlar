@@ -6,7 +6,7 @@ c = conn.cursor()
 
 # Create a table to store the prices
 c.execute(
-    'CREATE TABLE prices (website text, query text, item text, price real, time real)'
+    'CREATE TABLE prices (website text, query text, item text, price real, time real, link text)'
 )
 
 # Commit the changes and close the connection
