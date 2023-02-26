@@ -6,16 +6,16 @@ import time
 conn = sqlite3.connect('prices.db')
 c = conn.cursor()
 
- 
-# c.execute('INSERT INTO prices (website text, query text, item text, price real, time integer)')
 prices = fiyatlar.main()
 curr_time = time.time()
 for website in prices:
     for item, price in prices[website].items():
         if price == "":
-            price = ["",""]
-        c.execute('INSERT INTO prices VALUES (?, ?, ?, ?, ?, ?)',
-        (website, item.split("@")[0].strip() , item, price[0], curr_time, price[1]))
+            price = ["", "", ""]
+        c.execute('INSERT INTO prices VALUES (?, ?, ?, ?, ?, ?, ?)',
+                  (website, item.split("@")[0].strip(), item, price[0],
+                   curr_time, price[1], price[2]))
+
 
 # Commit the changes and close the connection
 conn.commit()

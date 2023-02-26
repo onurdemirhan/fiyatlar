@@ -8,20 +8,31 @@ Select datetime(time, 'unixepoch', 'localtime') time, count(*) from prices GROUp
 Select time, count(*) from prices GROUp by time;
 select website, query, count(*) from prices group by website, query;
 
-select * from prices where query = 'Radeon RX 6800 XT' order by 1;
+select * from prices where query = 'Radeon RX 7900 XT'
+--and trim(time) = trim(1677333591.23728)
+-- and website = 'akakce'
+order by price
+;
+
+SELECT query,
+          datetime(TIME, 'unixepoch', 'localtime') TIME, price, link
+   FROM prices
+   WHERE TIME =  (SELECT max(TIME) FROM prices) 
+   and query = 'Radeon RX 7900 XT'
+;
 
 
 --onceki vs son
 WITH
  son AS
   (SELECT query,
-          datetime(TIME, 'unixepoch', 'localtime') TIME, min(price) price
+          datetime(TIME, 'unixepoch', 'localtime') TIME, min(price) price, link
    FROM prices
    WHERE TIME =  (SELECT max(TIME) FROM prices)
    GROUP BY query, TIME),
  bir_once AS
   (SELECT query,
-          datetime(TIME, 'unixepoch', 'localtime') TIME, min(price) price
+          datetime(TIME, 'unixepoch', 'localtime') TIME, min(price) price, link
    FROM prices
    WHERE TIME = (SELECT MAX(TIME) FROM prices
                     WHERE TIME < (SELECT MAX(TIME)FROM prices) )
@@ -29,7 +40,8 @@ WITH
 SELECT son.query,
         son.price son_fiyat,
         bir_once.price bir_once_fiyat,
-        Round(bir_once.price - son.price,2) fark
+        Round(bir_once.price - son.price,2) fark,
+        son.link
 FROM son JOIN bir_once ON bir_once.query = son.query
 where son.price < bir_once.price;
 
@@ -37,7 +49,7 @@ where son.price < bir_once.price;
 --TEST
 --drop create
 drop table prices;
-CREATE TABLE prices (website text, query text, item text, price real, time integer, link text);
+CREATE TABLE prices (website text, query text, item text, price real, time integer, link text, search text);
 
 --update
 update prices 
@@ -47,12 +59,7 @@ and trim(time) = trim(1676792796.22653)
 and website = 'akakce';
 
 delete from prices 
-where trim(time) = trim(1676928830.16722);
+where trim(time) = trim(1677094374.2624);
 
 
 commit;
-
-select * from prices where query = 'Radeon RX 7900 XTX' 
-and trim(time) = trim(1676797795.03294)
-and website = 'akakce'
-;
