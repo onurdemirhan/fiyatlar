@@ -26,13 +26,13 @@ SELECT query,
 WITH
  son AS
   (SELECT query,
-          datetime(TIME, 'unixepoch', 'localtime') TIME, min(price) price, link
+          datetime(TIME, 'unixepoch', 'localtime') TIME, min(price) price, link, search
    FROM prices
    WHERE TIME =  (SELECT max(TIME) FROM prices)
    GROUP BY query, TIME),
  bir_once AS
   (SELECT query,
-          datetime(TIME, 'unixepoch', 'localtime') TIME, min(price) price, link
+          datetime(TIME, 'unixepoch', 'localtime') TIME, min(price) price, link, search
    FROM prices
    WHERE TIME = (SELECT MAX(TIME) FROM prices
                     WHERE TIME < (SELECT MAX(TIME)FROM prices) )
@@ -41,7 +41,8 @@ SELECT son.query,
         son.price son_fiyat,
         bir_once.price bir_once_fiyat,
         Round(bir_once.price - son.price,2) fark,
-        son.link
+        son.link,
+        son.search
 FROM son JOIN bir_once ON bir_once.query = son.query
 where son.price < bir_once.price;
 
@@ -59,7 +60,7 @@ and trim(time) = trim(1676792796.22653)
 and website = 'akakce';
 
 delete from prices 
-where trim(time) = trim(1677094374.2624);
+where trim(time) = trim(1677608290.8777);
 
 
 commit;

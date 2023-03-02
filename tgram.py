@@ -13,13 +13,9 @@ logging.basicConfig(
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text="/hepsi ve /hangisi komutlarini kullanabilirsiniz")
-
-
-async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text=update.message.text)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="sadece /hepsi ve /hangisi komutlarini kullanabilirsiniz")
 
 
 async def caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -29,13 +25,25 @@ async def caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def hepsi(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    q_result = c.execute(
-        "SELECT query, datetime(TIME, 'unixepoch', 'localtime') TIME, min(price) price, link FROM prices WHERE TIME =  (SELECT max(TIME) FROM prices) GROUP BY query, TIME;"
-    )
-    result_str = '\n'.join(
-        [f"{row[0]} - {row[2]} - {row[3]}" for row in q_result])
-    await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text=result_str)
+    if q_result := c.execute(
+            "SELECT query, datetime(TIME, 'unixepoch', 'localtime') TIME, min(price) price, link FROM prices WHERE TIME =  (SELECT max(TIME) FROM prices) GROUP BY query, TIME;"
+    ).fetchall():
+        timestamp = q_result[0][1]
+        result_str = f"{timestamp} tarihindeki en uygun fiyatlar:\n\n"
+        result_str += '\n'.join([
+            f"{row[0]} ( {row[2]} TL ) <a href='{row[3]}'>{row[3].split('/')[0]}</a>"
+            for row in q_result
+        ])
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=result_str,
+                                       parse_mode='HTML',
+                                       disable_web_page_preview=True)
+        user = update.message.from_user
+        print(user)
+    else:
+        result_str = "No results found"
+        await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=result_str)
 
 
 async def hangisi(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -45,7 +53,8 @@ async def hangisi(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Radeon RX 6900 XT", "Radeon RX 6800 XT", "Radeon RX 6800",
         "Radeon RX 6750 XT", "Radeon RX 6700 XT", "Radeon RX 6700",
         "Radeon RX 6650 XT", "Radeon RX 6600 XT", "Radeon RX 6600",
-        "Radeon RX 6500 XT", "GeForce RTX 3090 Ti", "GeForce RTX 3090",
+        "Radeon RX 6500 XT", "GeForce RTX 4090", "GeForce RTX 4080",
+        "GeForce RTX 4070 Ti", "GeForce RTX 3090 Ti", "GeForce RTX 3090",
         "GeForce RTX 3080 Ti", "GeForce RTX 3080", "GeForce RTX 3070 Ti",
         "GeForce RTX 3070", "GeForce RTX 3060", "GeForce RTX 3050"
     ]
@@ -65,18 +74,26 @@ async def hangisi(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def hangisi_selection(update: Update, context: CallbackContext):
     query_name = update.callback_query.data
     if q_result := c.execute(
-        "SELECT query, datetime(time, 'unixepoch', 'localtime') time, price, link FROM prices WHERE TIME = (SELECT max(TIME) FROM prices) and query = ?;",
-        (query_name,),
+            "SELECT query, datetime(time, 'unixepoch', 'localtime') time, price, link FROM prices WHERE TIME = (SELECT max(TIME) FROM prices) and query = ?;",
+        (query_name, ),
     ).fetchall():
         timestamp = q_result[0][1]
         # Construct the result string with the timestamp only at the beginning
-        result_str = f"{timestamp} tarihindeki fiyatlar:\n\n"
-        result_str += '\n'.join(
-            [f"{row[0]} - {row[2]} - {row[3]}" for row in q_result])
+        result_str = f"{timestamp} tarihindeki en uygun fiyatlar:\n\n"
+        result_str += '\n'.join([
+            f"{row[0]} ( {row[2]} TL ) <a href='{row[3]}'>{row[3].split('/')[0]}</a>"
+            for row in q_result
+        ])
+        # Set the parse_mode parameter to 'HTML'
+        await context.bot.send_message(
+            chat_id=update.callback_query.message.chat_id,
+            text=result_str,
+            parse_mode='HTML',
+            disable_web_page_preview=True)
     else:
         result_str = "No results found"
-    await context.bot.send_message(
-        chat_id=update.callback_query.message.chat_id, text=result_str)
+        await context.bot.send_message(
+            chat_id=update.callback_query.message.chat_id, text=result_str)
 
 
 # Helper function to build the button menu
@@ -106,7 +123,7 @@ async def inline_caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Sorry, I didn't understand that command.")
+        text="boyle bir komut yok, sadece /hepsi ve /hangisi kullanılabilir")
 
 
 if __name__ == '__main__':
@@ -114,21 +131,17 @@ if __name__ == '__main__':
         '6032820125:AAFg7K4LSMxPnFx0eSlahfGQynD62hXXZzE').build()
 
     start_handler = CommandHandler('start', start)
-    echo_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), echo)
     caps_handler = CommandHandler('caps', caps)
     hepsi_handler = CommandHandler('hepsi', hepsi)
     inline_caps_handler = InlineQueryHandler(inline_caps)
     unknown_handler = MessageHandler(filters.COMMAND, unknown)
-    hangisi_handler = CommandHandler('hangisi',
-                                             hangisi)
+    hangisi_handler = CommandHandler('hangisi', hangisi)
 
     application.add_handler(start_handler)
-    application.add_handler(echo_handler)
     application.add_handler(caps_handler)
     application.add_handler(hepsi_handler)
-    application.add_handler(hangisi_handler)  
-    application.add_handler(
-        CallbackQueryHandler(hangisi_selection))
+    application.add_handler(hangisi_handler)
+    application.add_handler(CallbackQueryHandler(hangisi_selection))
     application.add_handler(inline_caps_handler)
     application.add_handler(unknown_handler)
 

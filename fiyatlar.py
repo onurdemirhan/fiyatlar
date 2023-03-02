@@ -88,7 +88,8 @@ def epey(webpage):
                         class_="fiyat cell") is None:  #if product is NA
                 continue
             product_title = element.find(class_="urunadi").text
-            link = element.find(class_="detay cell").a["href"]
+            link = element.find(
+                class_="detay cell").a["href"].strip("https://www.")
             search = url.url
             product_price = float(
                 element.find(class_="fiyat cell").find("a").next_element.split(
@@ -104,10 +105,11 @@ def epey(webpage):
 
 queries = [
     "Radeon RX 7900 XTX", "Radeon RX 7900 XT", "Radeon RX 6950 XT",
-    "Radeon RX 6900 XT",  "Radeon RX 6800 XT", "Radeon RX 6800",
+    "Radeon RX 6900 XT", "Radeon RX 6800 XT", "Radeon RX 6800",
     "Radeon RX 6750 XT", "Radeon RX 6700 XT", "Radeon RX 6700",
     "Radeon RX 6650 XT", "Radeon RX 6600 XT", "Radeon RX 6600",
-    "Radeon RX 6500 XT", "GeForce RTX 3090 Ti", "GeForce RTX 3090",
+    "Radeon RX 6500 XT", "GeForce RTX 4090", "GeForce RTX 4080",
+    "GeForce RTX 4070 Ti", "GeForce RTX 3090 Ti", "GeForce RTX 3090",
     "GeForce RTX 3080 Ti", "GeForce RTX 3080", "GeForce RTX 3070 Ti",
     "GeForce RTX 3070", "GeForce RTX 3060", "GeForce RTX 3050"
 ]
@@ -145,7 +147,7 @@ def main():
                 prices[website] = {}
             price = func(WEBSITES[website])
             if price == {}:
-                prices[website].update({f"{query} @ " : ""})
+                prices[website].update({f"{query} @ ": ""})
             else:
                 prices[website].update(price)
     for website in prices:
@@ -155,7 +157,6 @@ def main():
                 continue
             print(f"{item}: {price[0]} @ {website} @ {price[1]} @ {price[2]}")
     return prices
-    
 
 
 if __name__ == '__main__':
