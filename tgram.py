@@ -1,20 +1,14 @@
-import logging
-from telegram import Update, InlineQueryResultArticle, InputTextMessageContent, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import filters, MessageHandler, ApplicationBuilder, CommandHandler, ContextTypes, InlineQueryHandler, CallbackContext, CallbackQueryHandler
 import sqlite3
+import time
 
 # Create a connection to the database
 conn = sqlite3.connect('prices.db')
 c = conn.cursor()
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO)
-
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
-        chat_id=update.effective_chat.id,
         text="sadece /hepsi ve /hangisi komutlarini kullanabilirsiniz")
 
 
@@ -34,12 +28,21 @@ async def hepsi(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"{row[0]} ( {row[2]} TL ) <a href='{row[3]}'>{row[3].split('/')[0]}</a>"
             for row in q_result
         ])
+        upmsg = update.message or update.edited_message
+        if not c.execute(  # if user not in db
+                f"select exists (select 1 from users where user_id  = {upmsg.chat.id});"
+        ).fetchall()[0][0]:
+            c.execute(
+                f"INSERT INTO users VALUES ('{upmsg.chat.first_name}' , {upmsg.chat.id}, '{upmsg.chat.last_name}', {time.time()} );"
+            )
+        c.execute(
+            f"INSERT INTO usage VALUES({upmsg.chat.id}, '{upmsg.text}',  {time.time()})"
+        )
+        conn.commit()
         await context.bot.send_message(chat_id=update.effective_chat.id,
                                        text=result_str,
                                        parse_mode='HTML',
                                        disable_web_page_preview=True)
-        user = update.message.from_user
-        print(user)
     else:
         result_str = "No results found"
         await context.bot.send_message(chat_id=update.effective_chat.id,
@@ -77,6 +80,16 @@ async def hangisi_selection(update: Update, context: CallbackContext):
             "SELECT query, datetime(time, 'unixepoch', 'localtime') time, price, link FROM prices WHERE TIME = (SELECT max(TIME) FROM prices) and query = ?;",
         (query_name, ),
     ).fetchall():
+        if not c.execute(  # add if user not in db 
+                f"select exists (select 1 from users where user_id  = {update.effective_user.id});"
+        ).fetchall()[0][0]:
+            c.execute(
+                f"INSERT INTO users VALUES ('{update.effective_user.first_name}' , {update.effective_user.id}, '{update.effective_user.last_name}', {time.time()} );"
+            )
+        c.execute(
+            f"INSERT INTO usage VALUES({update.effective_user.id}, '/hangisi',  {time.time()})"
+        )
+        conn.commit()
         timestamp = q_result[0][1]
         # Construct the result string with the timestamp only at the beginning
         result_str = f"{timestamp} tarihindeki en uygun fiyatlar:\n\n"
@@ -106,24 +119,10 @@ def build_menu(buttons, n_cols, header_buttons=None, footer_buttons=None):
     return menu
 
 
-async def inline_caps(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.inline_query.query
-    if not query:
-        return
-    results = [
-        InlineQueryResultArticle(
-            id=query.upper(),
-            title='Caps',
-            input_message_content=InputTextMessageContent(query.upper()),
-        )
-    ]
-    await context.bot.answer_inline_query(update.inline_query.id, results)
-
-
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="boyle bir komut yok, sadece /hepsi ve /hangisi kullanılabilir")
+        text="boyle bir komut yok, sadece /hepsi ve /hangisi kullanilabilir")
 
 
 if __name__ == '__main__':
@@ -132,17 +131,16 @@ if __name__ == '__main__':
 
     start_handler = CommandHandler('start', start)
     caps_handler = CommandHandler('caps', caps)
-    hepsi_handler = CommandHandler('hepsi', hepsi)
-    inline_caps_handler = InlineQueryHandler(inline_caps)
-    unknown_handler = MessageHandler(filters.COMMAND, unknown)
+    hepsi_handler = MessageHandler(filters.Regex(r'^/hepsi($|\s)'), hepsi)
     hangisi_handler = CommandHandler('hangisi', hangisi)
+    unknown_handler = MessageHandler(filters.COMMAND, unknown)
+    
 
     application.add_handler(start_handler)
     application.add_handler(caps_handler)
     application.add_handler(hepsi_handler)
     application.add_handler(hangisi_handler)
     application.add_handler(CallbackQueryHandler(hangisi_selection))
-    application.add_handler(inline_caps_handler)
     application.add_handler(unknown_handler)
 
     application.run_polling()
