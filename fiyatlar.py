@@ -14,7 +14,7 @@ def cimri(webpage):
                       headers=headers) as url:
         data = url.content
     product_prices = {}
-    if url.status_code == 429:
+    if url.status_code in (429, 504):
         return product_prices
     soup = BeautifulSoup(data, "html.parser")
     product_elements = soup.find(class_="cACjAF")
@@ -45,7 +45,7 @@ def akakce(webpage):
                       headers=headers) as url:
         data = url.content
     product_prices = {}
-    if url.status_code == 429:
+    if url.status_code in (429, 504):
         return product_prices
     soup = BeautifulSoup(data, "html.parser")
     product_elements = soup.find(id="APL").find_all("li")
@@ -76,7 +76,7 @@ def epey(webpage):
                       headers=headers) as url:
         data = url.content
     product_prices = {}
-    if url.status_code == 429:
+    if url.status_code in (429,504):
         return product_prices
     soup = BeautifulSoup(data, "html.parser")
     product_elements = soup.find_all(class_="listele table")[0].find_all("ul")

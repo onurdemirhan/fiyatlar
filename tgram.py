@@ -1,11 +1,15 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import filters, MessageHandler, ApplicationBuilder, CommandHandler, ContextTypes, InlineQueryHandler, CallbackContext, CallbackQueryHandler
+from telegram.ext import filters, MessageHandler, ApplicationBuilder, CommandHandler, ContextTypes, CallbackContext, CallbackQueryHandler
 import sqlite3
 import time
 
 # Create a connection to the database
 conn = sqlite3.connect('prices.db')
 c = conn.cursor()
+
+# token file
+with open("tokenfile.txt","r") as tf:
+    tokenfile = tf.read()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
@@ -126,8 +130,7 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == '__main__':
-    application = ApplicationBuilder().token(
-        '6032820125:AAFg7K4LSMxPnFx0eSlahfGQynD62hXXZzE').build()
+    application = ApplicationBuilder().token(tokenfile).build()
 
     start_handler = CommandHandler('start', start)
     caps_handler = CommandHandler('caps', caps)
